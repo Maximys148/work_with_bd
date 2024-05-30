@@ -1,11 +1,9 @@
 package com.hronous.services;
 
 
+import com.hronous.annotations.InjectDBClasses;
 import com.hronous.annotations.Service;
-import com.hronous.entities.Book;
-import com.sun.jdi.connect.spi.Connection;
 
-import javax.naming.spi.DirStateFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,8 +16,12 @@ import java.util.*;
  */
 @Service
 public class EntityServices {
-
+    @InjectDBClasses
     private Map<String, Class<?>> entities = new HashMap<>();
+
+    public Map<String, Class<?>> getEntities() {
+        return entities;
+    }
 
     public EntityServices() {
         init();
@@ -30,6 +32,7 @@ public class EntityServices {
      * и создает таблицу в БД если ее там не было.
      */
     private void init(){
+        /*
         try {
             DBConnection connections = new DBConnection();
             Statement statement = connections.getConnection("jdbc:postgresql://127.0.0.1:8090/Library?user=postgres&password=1234").createStatement();
@@ -50,6 +53,6 @@ public class EntityServices {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
+        }*/
     }
 }

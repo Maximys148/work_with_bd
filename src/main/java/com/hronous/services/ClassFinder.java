@@ -1,6 +1,8 @@
 package com.hronous.services;
 
 
+import com.hronous.annotations.InjectDBClasses;
+import com.hronous.annotations.Service;
 import com.hronous.annotations.Table;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -8,14 +10,14 @@ import org.reflections.scanners.SubTypesScanner;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ClassFinder {
-
     private Map<String, Class<?>> dbTables = new HashMap<>();
+    private Map<String, Object> servises = new HashMap<>();
 
     public void findClasses(String packageName, Class<?> clazz){
         InputStream resourceAsStream = ClassLoader.getSystemClassLoader()
@@ -49,6 +51,27 @@ public class ClassFinder {
             if (clazz.isAnnotationPresent(Table.class)){
                 Table annotation = clazz.getAnnotation(Table.class);
                 dbTables.put(annotation.tableName(), clazz);
+            }
+            if (clazz.isAnnotationPresent(Service.class)){
+                try {
+                    Object o = clazz.getConstructor().newInstance();
+                    servises.put(clazz.getName(), o);
+                } catch (NoSuchMethodException | IllegalAccessException | InstantiationException |
+                         InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
+                Field[] declaredFields = clazz.getDeclaredFields();
+                for (Field declaredField : declaredFields) {
+                    if(declaredField.isAnnotationPresent(InjectDBClasses.class)){
+                        declaredField.setAccessible(true);
+                        try {
+
+                            declaredField.set(servises.get(clazz.getName()), dbTables);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
             }
         }
     }
