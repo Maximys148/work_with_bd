@@ -1,6 +1,7 @@
 package com.hronous.services;
 
 
+import com.hronous.annotations.Table;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class ClassFinder {
 
-    private Map<String, Class<?>> classes = new HashMap<>();
+    private Map<String, Class<?>> dbTables = new HashMap<>();
 
     public void findClasses(String packageName, Class<?> clazz){
         InputStream resourceAsStream = ClassLoader.getSystemClassLoader()
@@ -44,7 +45,11 @@ public class ClassFinder {
     public void getClasses(String packageName) {
        Reflections reflections = new Reflections(packageName , new SubTypesScanner(false));
         Set<Class<?>> subTypesOf = reflections.getSubTypesOf(Object.class);
-
-
+        for (Class<?> clazz: subTypesOf) {
+            if (clazz.isAnnotationPresent(Table.class)){
+                Table annotation = clazz.getAnnotation(Table.class);
+                dbTables.put(annotation.tableName(), clazz);
+            }
+        }
     }
 }
