@@ -37,14 +37,14 @@ public class EntityServices {
                     "FROM information_schema.tables\n" +
                     "WHERE table_schema = 'public'\n" +
                     "AND table_type = 'BASE TABLE';\n");
-            HashSet<String> tableNames = new HashSet();
+            Set<String> tableNames = new HashSet();
             while (tableSearch.next()){
                 tableNames.add(tableSearch.getString(1));
                 System.out.println(tableSearch.getString(1));
             }
             for (String tableName: tableNames) {
                 boolean presence = Arrays.asList(entities).contains(tableSearch);
-                if(presence){
+                if(!presence){
                     statement.executeQuery("CREATE TABLE '"+tableName+"' ();");
                 }
             }
