@@ -6,6 +6,7 @@ import com.hronous.exceptions.DBConnectionException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,13 +15,13 @@ import java.util.Map;
 
 @Service
 public class DBConnection {
-
-    private int connectionCount = 0;//Количество соединени в БД
-    private int maxCountConnection = 5;//Макисмальное количество Подключений к БД
-    private Map<String, List<Connection>> connections = new HashMap<>();
-    private Connection connection;//"jdbc:postgresql://127.0.0.1:8090/Library?user=postgres&password=1234"
+    private static Map<String, Connection> connections = new HashMap<>();  //"jdbc:postgresql://127.0.0.1:8090/Library?user=postgres&password=1234"
 
     public DBConnection() {
+    }
+
+    public void init(){
+        System.out.println("Initializing DB connection");
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -28,31 +29,35 @@ public class DBConnection {
         }
     }
 
-    public Connection getConnection(String connectionString ) {
+    private Connection getConnection(String connectionString ) {
         try {
-            Connection connection = DriverManager.getConnection(connectionString);
-            List<Connection> connections1 = connections.get(connectionString);
+            Connection connections1 = connections.get(connectionString);
             if (connections1 == null){
-                connections1 = new ArrayList<>();
+                connections1 = DriverManager.getConnection(connectionString);
                 connections.put(connectionString, connections1);
-            }else{
-                if (connections1.size() > maxCountConnection  )
-                    throw new DBConnectionException(
-                            String.format("Превишено количество подключений - [%d]", maxCountConnection));
             }
-            connections1.add(connection);
-            connectionCount++;
-            return connection;
+            return connections1;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Statement createStatement(String connectionString) throws SQLException {
+        return getConnection(connectionString).createStatement();
     }
 
     /**
      * Закрыть все соединения, которые есть в нашей MAP
      */
     public void closeAllConnection(){
-
+        for (Map.Entry<String, Connection> entry : connections.entrySet()) {
+            try {
+                entry.getValue().close();
+                connections.remove(entry.getKey());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
@@ -60,6 +65,15 @@ public class DBConnection {
      * @param connection
      */
     public void closeConnection(Connection connection){
-
+        for (Map.Entry<String, Connection> entry : connections.entrySet()) {
+            try {
+                if (entry.getValue() == connection){
+                    entry.getValue().close();
+                    connections.remove(entry.getKey());
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
