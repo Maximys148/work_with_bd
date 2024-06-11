@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Service
 public class DBConnection {
-    private static Map<String, Connection> connections = new HashMap<>();  //"jdbc:postgresql://127.0.0.1:8090/Library?user=postgres&password=1234"
+    private static Map<String, Connection> connections = new HashMap<>();  //"jdbc:postgresql://127.0.0.1:8090/library?user=postgres&password=1234"
 
     public DBConnection() {
     }

@@ -60,7 +60,6 @@ public class ClassFinder {
                 try {
                     Object o = clazz.getConstructor().newInstance();
                     servises.put(clazz.getName(), o);
-
                 } catch (NoSuchMethodException | IllegalAccessException | InstantiationException |
                          InvocationTargetException e) {
                     throw new RuntimeException(e);
@@ -85,6 +84,14 @@ public class ClassFinder {
                 //Запускаем метод init();
             }
         }
+        entitiesWithBDConnection.forEach((object, field)->{
+            field.setAccessible(true);
+            try {
+                field.set(object, servises.get(DBConnection.class.getName()));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        });
         servises.forEach((key, value)->{
             try {
                 Method methodInit = value.getClass().getDeclaredMethod("init");
@@ -93,14 +100,6 @@ public class ClassFinder {
                     methodInit.invoke(value, null);
                 }
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        entitiesWithBDConnection.forEach((key, value)->{
-            value.setAccessible(true);
-            try {
-                value.set(key, servises.get(DBConnection.class.getName()));
-            } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         });

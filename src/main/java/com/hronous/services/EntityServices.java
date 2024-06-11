@@ -33,9 +33,8 @@ public class EntityServices {
      */
     public void init(){
         System.out.println("Initializing EntityServices");
-        /*
         try {
-            Statement statement = dbConnection.getConnection("jdbc:postgresql://127.0.0.1:8090/Library?user=postgres&password=1234").createStatement();
+            Statement statement = dbConnection.createStatement("jdbc:postgresql://127.0.0.1:5432/library?user=postgres&password=Max.2005");
             ResultSet tableSearch = statement.executeQuery("SELECT table_name\n" +
                     "FROM information_schema.tables\n" +
                     "WHERE table_schema = 'public'\n" +
@@ -45,16 +44,15 @@ public class EntityServices {
                 tableNames.add(tableSearch.getString(1));
                 System.out.println(tableSearch.getString(1));
             }
-            for (String tableName: tableNames) {
-                boolean presence = Arrays.asList(entities).contains(tableSearch);
+            for (Map.Entry<String, Class<?>> entry: entities.entrySet()) {
+                boolean presence = tableNames.contains(entry.getKey());
                 if(!presence){
-                    statement.executeQuery("CREATE TABLE '"+tableName+"' ();");
+                    statement.execute("CREATE TABLE public."+entry.getKey() +
+                            "(Id SERIAL PRIMARY KEY)");
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-         */
     }
 }
