@@ -1,14 +1,16 @@
 package com.hronous.services;
 
 
-import com.hronous.annotations.InjectDBClasses;
-import com.hronous.annotations.Service;
+import com.hronous.annotations.*;
+import com.hronous.entities.Book;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис который обрабатывает наши Сущности БД (помеченные аннотацией Table)
@@ -46,13 +48,53 @@ public class EntityServices {
             }
             for (Map.Entry<String, Class<?>> entry: entities.entrySet()) {
                 boolean presence = tableNames.contains(entry.getKey());
+                Field[] fields = entry.getValue().getDeclaredFields();
+                StringBuilder SQLQuery = new StringBuilder();//"CREATE TABLE public."+ entry.getKey()).append("(");
+                for (Field field: fields) {
+                    if(SQLQuery.length() != 0){
+                        SQLQuery.append(", ");
+                    }
+                    if(field.getType().equals(long.class)){
+                        SQLQuery.append(field.getName()).append(" ");
+                        SQLQuery.append("Integer");
+                    }
+                    if(field.getType().equals(String.class)){
+                        SQLQuery.append(field.getName()).append(" ");
+                        SQLQuery.append("CHARACTER VARYING(255)");
+                    }
+                    if (field.isAnnotationPresent(Id.class)){
+                        SQLQuery.append(" PRIMARY KEY");
+                    }
+                    System.out.printf("%s %s \n",field.getName(), field.getType());
+                }
+                SQLQuery.insert(0, "CREATE TABLE public."+ entry.getKey() + "( ");
+                SQLQuery.append(")");
                 if(!presence){
-                    statement.execute("CREATE TABLE public."+entry.getKey() +
-                            "(Id SERIAL PRIMARY KEY)");
+                    statement.execute(String.valueOf(SQLQuery));
+                    SQLQuery.reverse();
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+        save(new Book("Book1", "Max"));
+    }
+
+    public void save(Object object){
+        if(object.getClass().isAnnotationPresent(Table.class)){
+            Class<?> clazz = object.getClass();
+            Field[] fields = clazz.getDeclaredFields();
+            Map<String, Object> columValue = Arrays.stream(fields).filter((field) -> field.isAnnotationPresent(Column.class)).collect(Collectors.toMap(field -> field.getName(), field -> {
+                try {
+                    field.setAccessible(true);
+                    return field.get(object);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+            System.out.println(" ");
+        }else{
+            System.out.println("Объект не является таблицей");
         }
     }
 }

@@ -8,6 +8,7 @@ import com.hronous.annotations.Table;
 public class Book {
 
     @Id
+    @Column
     private long id;
 
     @Column
@@ -22,6 +23,7 @@ public class Book {
     public Book(String name, String author) {
         this.name = name;
         this.author = author;
+        this.secretField = " ";
     }
 
     public Book() {
