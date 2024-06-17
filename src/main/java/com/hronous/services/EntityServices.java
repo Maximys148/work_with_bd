@@ -49,23 +49,25 @@ public class EntityServices {
             for (Map.Entry<String, Class<?>> entry: entities.entrySet()) {
                 boolean presence = tableNames.contains(entry.getKey());
                 Field[] fields = entry.getValue().getDeclaredFields();
-                StringBuilder SQLQuery = new StringBuilder();//"CREATE TABLE public."+ entry.getKey()).append("(");
+                StringBuilder SQLQuery = new StringBuilder();  //"CREATE TABLE public."+ entry.getKey()).append("(");
                 for (Field field: fields) {
-                    if(SQLQuery.length() != 0){
-                        SQLQuery.append(", ");
+                    if(field.isAnnotationPresent(Column.class)){
+                        if(SQLQuery.length() != 0){
+                            SQLQuery.append(", ");
+                        }
+                        if(field.getType().equals(long.class)){
+                            SQLQuery.append(field.getName()).append(" ");
+                            SQLQuery.append("Integer");
+                        }
+                        if(field.getType().equals(String.class)){
+                            SQLQuery.append(field.getName()).append(" ");
+                            SQLQuery.append("CHARACTER VARYING(255)");
+                        }
+                        if (field.isAnnotationPresent(Id.class)){
+                            SQLQuery.append(" PRIMARY KEY");
+                        }
+                        System.out.printf("%s %s \n",field.getName(), field.getType());
                     }
-                    if(field.getType().equals(long.class)){
-                        SQLQuery.append(field.getName()).append(" ");
-                        SQLQuery.append("Integer");
-                    }
-                    if(field.getType().equals(String.class)){
-                        SQLQuery.append(field.getName()).append(" ");
-                        SQLQuery.append("CHARACTER VARYING(255)");
-                    }
-                    if (field.isAnnotationPresent(Id.class)){
-                        SQLQuery.append(" PRIMARY KEY");
-                    }
-                    System.out.printf("%s %s \n",field.getName(), field.getType());
                 }
                 SQLQuery.insert(0, "CREATE TABLE public."+ entry.getKey() + "( ");
                 SQLQuery.append(")");
@@ -79,9 +81,24 @@ public class EntityServices {
         }
         save(new Book("Book1", "Max"));
     }
+    private List<Object> findAll(Object object){
+        List<Object> fieldsOfClazz = new ArrayList<>();
+        Class<?> clazz = object.getClass();
+        if(clazz.isAnnotationPresent(Table.class)){
+            Field[] fields = clazz.getDeclaredFields();
+            for (Field field: fields) {
+                if(field.isAnnotationPresent(Column.class)){
+                    fieldsOfClazz.add(field.getName());
+                }
+            }
+        }
+        Collections.reverse(fieldsOfClazz);
+        return  fieldsOfClazz;
+    }
 
     public void save(Object object){
         if(object.getClass().isAnnotationPresent(Table.class)){
+            StringBuilder SQLQuery = new StringBuilder();
             Class<?> clazz = object.getClass();
             Field[] fields = clazz.getDeclaredFields();
             Map<String, Object> columValue = Arrays.stream(fields).filter((field) -> field.isAnnotationPresent(Column.class)).collect(Collectors.toMap(field -> field.getName(), field -> {
@@ -92,6 +109,19 @@ public class EntityServices {
                     throw new RuntimeException(e);
                 }
             }));
+            for (Object colum :findAll(object)){
+                if(SQLQuery.length() != 0){
+                    SQLQuery.append(", ");
+                }
+                SQLQuery.append(colum);
+            }
+            SQLQuery.append(") values (");
+            for (String nameColum : columValue.keySet()){
+                SQLQuery.append(columValue.get(nameColum));
+                SQLQuery.append(", ");
+            }
+            SQLQuery.delete(SQLQuery.length() - 2, SQLQuery.length() - 1);
+            SQLQuery.insert(0, "insert into public." + clazz.getSimpleName() +"(").append(")");
             System.out.println(" ");
         }else{
             System.out.println("Объект не является таблицей");
